@@ -11,7 +11,9 @@ router.post('/', async (req, res) => {
       req.body.hasOwnProperty('contents')
     ) {
       const post = await db.insert(req.body);
-      res.status(201).json(post);
+      if (post.hasOwnProperty('id')) {
+        res.status(201).json(await db.findById(post.id));
+      }
     } else {
       res.status(400).json({
         errorMessage: 'Please provide title and contents for the post.'
@@ -37,7 +39,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const post = await db.findById(req.params.id);
-    if (!post) {
+    if (!post.length) {
       res
         .status(404)
         .json({ message: 'The post with the specified ID does not exist.' });
@@ -60,7 +62,10 @@ router.delete('/:id', async (req, res) => {
         .status(404)
         .json({ message: 'The post with the specified ID does not exist.' });
     } else {
-      res.status(204).end();
+      const count = await db.remove(req.params.id);
+      if (count > 0) {
+        res.status(204).end();
+      }
     }
   } catch (error) {
     console.log('DELETE /api/posts/:id ERROR: ', error);
@@ -81,7 +86,9 @@ router.put('/:id', async (req, res) => {
           .json({ message: 'The post with the specified ID does not exist.' });
       } else {
         const updatedPost = await db.update(req.params.id, req.body);
-        res.status(200).json(updatedPost);
+        if (updatedPost) {
+          res.status(200).json(await db.findById(req.params.id));
+        }
       }
     } else {
       res.status(400).json({
@@ -95,3 +102,5 @@ router.put('/:id', async (req, res) => {
       .json({ error: 'The post information could not be modified.' });
   }
 });
+
+module.exports = router;
